@@ -17,7 +17,7 @@ IDT_C2::IDT_C2(QWidget *parent)
     {
         connect(this,&IDT_C2::si_Messages,this,&IDT_C2::sl_DisplayMessage);
         connect(c_server,&QTcpServer::newConnection,this,&IDT_C2::sl_NewConnection); // sender,signal,receiver,slot
-        ui->TBx_Messages->append("Listening");
+        ui->TBx_Messages->append("Waiting For Client Connection. Any IP, 1234 Port is Listening");
        // Adress=c_server->serverAddress();
         //port = c_server->serverPort();
     }
@@ -59,11 +59,8 @@ void IDT_C2::sl_AppendToSocketList(QTcpSocket *socket)
     connect(socket, &QTcpSocket::disconnected, this, &IDT_C2::sl_DiscardSocket);
     connect(socket, &QAbstractSocket::errorOccurred, this, &IDT_C2::sl_DisplayError);
     ui->CB_Receivers->addItem(QString::number(socket->peerPort()));
-    QString PeerName=socket->peerName();
-  QHostAddress PeerAdress = socket->peerAddress();
     port = socket->peerPort();
-    qintptr Desc = socket->socketDescriptor();
-    sl_DisplayMessage(QString("INFO :: Client with socked:%1 has just connected").arg(socket->socketDescriptor()));
+    sl_DisplayMessage(QString(" Client with socked:%1 has just connected").arg(socket->peerPort()));
 }
 
 void IDT_C2::sl_ReadDataFromSocket()
@@ -76,7 +73,7 @@ void IDT_C2::sl_DiscardSocket()
     QTcpSocket* socket = reinterpret_cast<QTcpSocket*>(sender());
     QSet<QTcpSocket*>::iterator it = connection_set.find(socket);
     if (it != connection_set.end()){
-        sl_DisplayMessage(QString("INFO :: A client has just left the room").arg(socket->socketDescriptor()));
+        sl_DisplayMessage(QString(" Client with socket:%1 has just disconnected").arg(socket->peerPort()));
         connection_set.remove(*it);
     }
  //   refreshComboBox(); LAter
@@ -106,12 +103,14 @@ void IDT_C2::sl_SendScreenShotToClient()
 {
     QString receiver = ui->CB_Receivers->currentText();
 
-    QString filePath = QFileDialog::getOpenFileName(this, ("Select an attachment"), QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), ("File (*.json *.txt *.png *.jpg *.jpeg)"));
+    QString filePath = QFileDialog::getOpenFileName(this, ("Select a Secreenshot"), QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), ("File (*.json *.txt *.png *.jpg *.jpeg)"));
 
     if(filePath.isEmpty()){
         QMessageBox::critical(this,"QTCPClient","You haven't selected any attachment!");
         return;
     }
+
+    // Some actions have to be taken
 
     if(receiver=="Broadcast")
     {
@@ -183,14 +182,11 @@ void IDT_C2::sl_PackAndSend(QTcpSocket *socket, QString filePath)
                 //byteArray.prepend(header);
                 //FileArray.append(QString("AEC").toUtf8());
 
-                /*QSaveFile file("C:/Users/Poncikzade/Desktop/test.txt");
+                QSaveFile file("C:/Users/Poncikzade/Desktop/test.txt");
                 file.open(QIODevice::WriteOnly);
                 file.write(header);
-                file.write(DataSectionArray);
-                // Calling commit() is mandatory, otherwise nothing will be written.
+                file.write(DataSectionArray);             
                 file.commit();
-                */
-
 
                 QFile file_read("C:/Users/Poncikzade/Desktop/test.txt");
                 if (!file_read.open(QIODevice::ReadOnly | QIODevice::Text))
